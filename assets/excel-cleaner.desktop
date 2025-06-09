@@ -1,0 +1,9 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Excel Cleaner
+Comment=Remove spaces from Excel files
+Exec=excel-cleaner
+Icon=excel-cleaner
+Terminal=false
+Categories=Office;Utility; 

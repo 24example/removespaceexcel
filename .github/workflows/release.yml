@@ -113,7 +113,20 @@ jobs:
             fi
             
             zip -r "${OUTPUT_NAME}.zip" "${APP_NAME}" README.md LICENSE
+          elif [ "${{ matrix.os }}" = "linux" ]; then
+            go build -v -trimpath -tags "!console" -ldflags="${LDFLAGS}" -o "excel-cleaner${{ matrix.ext }}"
+            
+            # Копируем файлы для Linux
+            cp assets/excel-cleaner.desktop .
+            cp assets/install-linux.sh install.sh
+            chmod +x install.sh
+            
+            # Копируем иконку
+            cp assets/icon.png excel-cleaner.png
+            
+            zip "${OUTPUT_NAME}.zip" "excel-cleaner${{ matrix.ext }}" excel-cleaner.desktop excel-cleaner.png install.sh README.md LICENSE
           else
+            # Windows
             go build -v -trimpath -tags "!console" -ldflags="${LDFLAGS}" -o "excel-cleaner${{ matrix.ext }}"
             zip "${OUTPUT_NAME}.zip" "excel-cleaner${{ matrix.ext }}" README.md LICENSE
           fi
