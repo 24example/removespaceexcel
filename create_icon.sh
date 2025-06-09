@@ -1,40 +1,112 @@
 #!/bin/bash
 
-# Создаем базовое изображение 1024x1024 с зеленым фоном (#217346)
-# Используем высокое качество и антиалиасинг
-convert -size 1024x1024 xc:#217346 -quality 100 base.png
+# Создаем базовое изображение 1024x1024 с градиентным фоном
+# Используем градиент от темно-зеленого к светло-зеленому для глубины
+convert -size 1024x1024 \
+    radial-gradient:'#2E8B57'-'#217346' \
+    -quality 100 base.png
 
-# Добавляем букву E белым цветом с увеличенным размером и лучшим позиционированием
-# Используем -kerning для лучшего рендеринга
-convert base.png -gravity center \
-    -pointsize 720 \
+# Добавляем легкую текстуру/шум для профессионального вида
+convert base.png \
+    -attenuate 0.1 \
+    +noise Gaussian \
+    base_textured.png
+
+# Создаем округлую форму с тенью для современного вида
+convert -size 1024x1024 xc:transparent \
+    -fill white \
+    -draw "roundrectangle 100,100 924,924 80,80" \
+    mask.png
+
+# Применяем маску к фону
+convert base_textured.png mask.png \
+    -alpha off -compose CopyOpacity -composite \
+    rounded_base.png
+
+# Добавляем мягкую тень
+convert rounded_base.png \
+    \( +clone -background black -shadow 80x20+0+15 \) \
+    +swap -background transparent -layers merge +repage \
+    shadowed_base.png
+
+# Создаем букву E с эффектом 3D
+convert -size 1024x1024 xc:transparent \
+    -gravity center \
+    -pointsize 600 \
     -font Arial-Bold \
     -fill white \
-    -kerning -10 \
+    -stroke '#E8F5E9' \
+    -strokewidth 3 \
+    -kerning -20 \
     -antialias \
-    -annotate +0-80 'E' text.png
+    -annotate +0-50 'E' \
+    letter_e.png
 
-# Добавляем слово "очистка" мелким шрифтом под буквой E
-convert text.png -gravity center \
-    -pointsize 140 \
+# Добавляем внутреннюю тень к букве E для объема
+convert letter_e.png \
+    -channel A -morphology Distance Euclidean:1,10 \
+    -level 0,5% \
+    -negate \
+    letter_e_shadow.png
+
+# Объединяем букву с тенью
+convert shadowed_base.png letter_e.png \
+    -compose over -composite \
+    with_letter.png
+
+# Добавляем текст "EXCEL" сверху мелким шрифтом
+convert with_letter.png \
+    -gravity north \
+    -pointsize 90 \
     -font Arial \
-    -fill white \
+    -fill '#E8F5E9' \
     -antialias \
-    -annotate +0+280 'очистка' text_with_subtitle.png
+    -annotate +0+180 'EXCEL' \
+    with_excel.png
 
-# Добавляем символ очистки (метла) в верхнем правом углу
-# Уменьшаем отступ и увеличиваем размер символа
-convert text_with_subtitle.png -gravity northeast \
-    -pointsize 350 \
-    -font Arial-Unicode-MS \
-    -fill white \
+# Добавляем текст "CLEANER" снизу
+convert with_excel.png \
+    -gravity south \
+    -pointsize 90 \
+    -font Arial \
+    -fill '#E8F5E9' \
     -antialias \
-    -annotate +30+30 '🧹' icon_1024.png
+    -annotate +0+180 'CLEANER' \
+    with_cleaner.png
+
+# Добавляем стилизованный символ очистки (звездочки) вокруг буквы E
+convert with_cleaner.png \
+    -gravity northwest \
+    -pointsize 120 \
+    -font Arial \
+    -fill '#90EE90' \
+    -antialias \
+    -annotate +250+350 '✦' \
+    with_star1.png
+
+convert with_star1.png \
+    -gravity northeast \
+    -pointsize 100 \
+    -font Arial \
+    -fill '#98FB98' \
+    -antialias \
+    -annotate +280+400 '✧' \
+    with_star2.png
+
+convert with_star2.png \
+    -gravity southeast \
+    -pointsize 80 \
+    -font Arial \
+    -fill '#90EE90' \
+    -antialias \
+    -annotate +320+420 '✦' \
+    icon_1024.png
 
 # Применяем финальную обработку для улучшения качества
 convert icon_1024.png \
     -filter Lanczos \
-    -define filter:blur=0.8 \
+    -define filter:blur=0.9 \
+    -sharpen 0x0.5 \
     -quality 100 \
     icon_1024_final.png
 
@@ -79,4 +151,4 @@ convert icon_1024_final.png \
 cp icon_1024_final.png assets/icon.png
 
 # Очистка временных файлов
-rm -rf icon.iconset base.png text.png text_with_subtitle.png icon_1024.png icon_1024_final.png icon_*.png 
+rm -rf icon.iconset base.png base_textured.png mask.png rounded_base.png shadowed_base.png letter_e.png letter_e_shadow.png with_letter.png with_excel.png with_cleaner.png with_star1.png with_star2.png icon_1024.png icon_1024_final.png icon_*.png 
