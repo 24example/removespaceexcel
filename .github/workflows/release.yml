@@ -64,20 +64,27 @@ jobs:
         with:
           name: excel-cleaner-${{ matrix.os }}-${{ matrix.arch }}
           path: excel-cleaner-${{ steps.get_version.outputs.VERSION }}-${{ matrix.os }}-${{ matrix.arch }}.zip
+          retention-days: 1
+          compression-level: 0
 
   create-release:
     name: Create Release
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
+    permissions:
+      contents: write
     steps:
       - name: Download artifacts
         uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            */excel-cleaner-*.zip
+            artifacts/excel-cleaner-*.zip
           draft: false
           prerelease: false
           generate_release_notes: true
