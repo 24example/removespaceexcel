@@ -1,13 +1,25 @@
+//go:build !console
+// +build !console
+
 package main
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/ncruces/zenity"
 	"github.com/xuri/excelize/v2"
 )
+
+func init() {
+	// Отключаем вывод в stdout/stderr для GUI режима
+	if !appSettings.isTestMode {
+		os.Stdout = nil
+		os.Stderr = nil
+	}
+}
 
 // Version будет устанавливаться при сборке через ldflags
 var Version = "dev"

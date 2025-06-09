@@ -18,18 +18,35 @@ jobs:
           - os: windows
             arch: amd64
             ext: .exe
+            gui: true
+          - os: windows
+            arch: arm64
+            ext: .exe
+            gui: true
           - os: darwin
             arch: amd64
             ext: ""
+            gui: true
           - os: darwin
             arch: arm64
             ext: ""
+            gui: true
           - os: linux
             arch: amd64
             ext: ""
+            gui: true
           - os: linux
             arch: arm64
             ext: ""
+            gui: true
+          - os: linux
+            arch: "386"
+            ext: ""
+            gui: true
+          - os: windows
+            arch: "386"
+            ext: .exe
+            gui: true
 
     steps:
       - name: Checkout code
@@ -60,27 +77,73 @@ jobs:
           sed -i "s/\"ProductVersion\": \".*\"/\"ProductVersion\": \"$VERSION\"/" assets/versioninfo.json
           sed -i "s/\"FileVersion\": \"\"/\"FileVersion\": \"$VERSION\"/" assets/versioninfo.json
 
-          # Генерируем .syso файл
-          goversioninfo -platform-specific=true -manifest=assets/excel-cleaner.manifest -icon=assets/icon.ico -o=resource_windows_amd64.syso assets/versioninfo.json
+          # Генерируем .syso файл для соответствующей архитектуры
+          if [ "${{ matrix.arch }}" = "386" ]; then
+            goversioninfo -32 -platform-specific=true -manifest=assets/excel-cleaner.manifest -icon=assets/icon.ico -o=resource_windows_386.syso assets/versioninfo.json
+          else
+            goversioninfo -platform-specific=true -manifest=assets/excel-cleaner.manifest -icon=assets/icon.ico -o=resource_windows_${{ matrix.arch }}.syso assets/versioninfo.json
+          fi
 
       - name: Build
         env:
           GOOS: ${{ matrix.os }}
           GOARCH: ${{ matrix.arch }}
           VERSION: ${{ steps.get_version.outputs.VERSION }}
+          CGO_ENABLED: 0
         run: |
+          OUTPUT_NAME="excel-cleaner-${{ steps.get_version.outputs.VERSION }}-${{ matrix.os }}-${{ matrix.arch }}"
+
+          # Определяем базовые флаги линковщика
+          LDFLAGS="-s -w -X 'main.Version=${VERSION}'"
+
+          # Добавляем флаг GUI для Windows
+          if [ "${{ matrix.os }}" = "windows" ] && [ "${{ matrix.gui }}" = "true" ]; then
+            LDFLAGS="$LDFLAGS -H=windowsgui"
+          fi
+
           if [ "${{ matrix.os }}" = "darwin" ]; then
-            go build -v -ldflags="-X 'main.Version=${VERSION}'" -o "excel-cleaner${{ matrix.ext }}"
+            go build -v -trimpath -tags "!console" -ldflags="${LDFLAGS}" -o "excel-cleaner${{ matrix.ext }}"
+            
             # Создаем .app bundle для macOS
-            mkdir -p Excel\ Cleaner.app/Contents/MacOS
-            mkdir -p Excel\ Cleaner.app/Contents/Resources
-            cp excel-cleaner Excel\ Cleaner.app/Contents/MacOS/
-            cp assets/icon.icns Excel\ Cleaner.app/Contents/Resources/
-            cp assets/Info.plist Excel\ Cleaner.app/Contents/
-            zip -r "excel-cleaner-${{ steps.get_version.outputs.VERSION }}-${{ matrix.os }}-${{ matrix.arch }}.zip" Excel\ Cleaner.app README.md LICENSE
+            APP_NAME="Excel Cleaner.app"
+            mkdir -p "${APP_NAME}/Contents/MacOS"
+            mkdir -p "${APP_NAME}/Contents/Resources"
+            cp excel-cleaner "${APP_NAME}/Contents/MacOS/"
+            cp assets/icon.icns "${APP_NAME}/Contents/Resources/"
+            
+            # Создаем Info.plist
+            cat > "${APP_NAME}/Contents/Info.plist" << 'EOF'
+            <?xml version="1.0" encoding="UTF-8"?>
+            <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+            <plist version="1.0">
+            <dict>
+                <key>CFBundleExecutable</key>
+                <string>excel-cleaner</string>
+                <key>CFBundleIdentifier</key>
+                <string>com.excelcleaner.app</string>
+                <key>CFBundleName</key>
+                <string>Excel Cleaner</string>
+                <key>CFBundlePackageType</key>
+                <string>APPL</string>
+                <key>CFBundleShortVersionString</key>
+                <string>${VERSION}</string>
+                <key>LSMinimumSystemVersion</key>
+                <string>10.10</string>
+                <key>LSUIElement</key>
+                <true/>
+            </dict>
+            </plist>
+            EOF
+            
+            # Подписываем приложение если есть сертификат
+            if [ -n "$APPLE_DEVELOPER_CERTIFICATE" ]; then
+              codesign --force --sign "$APPLE_DEVELOPER_CERTIFICATE" --options runtime "${APP_NAME}"
+            fi
+            
+            zip -r "${OUTPUT_NAME}.zip" "${APP_NAME}" README.md LICENSE
           else
-            go build -v -ldflags="-X 'main.Version=${VERSION}'" -o "excel-cleaner${{ matrix.ext }}"
-            zip "excel-cleaner-${{ steps.get_version.outputs.VERSION }}-${{ matrix.os }}-${{ matrix.arch }}.zip" "excel-cleaner${{ matrix.ext }}" README.md LICENSE
+            go build -v -trimpath -tags "!console" -ldflags="${LDFLAGS}" -o "excel-cleaner${{ matrix.ext }}"
+            zip "${OUTPUT_NAME}.zip" "excel-cleaner${{ matrix.ext }}" README.md LICENSE
           fi
 
       - name: Upload build artifacts
