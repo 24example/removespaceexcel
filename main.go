@@ -58,6 +58,7 @@ func showMainDialog() error {
 		zenity.Title("Excel Cleaner "+Version),
 		zenity.OKLabel("Выбрать файл"),
 		zenity.CancelLabel("Выход"),
+		zenity.NoWrap(),
 		zenity.Width(400),
 		zenity.Height(300),
 		zenity.Icon(zenity.InfoIcon),
