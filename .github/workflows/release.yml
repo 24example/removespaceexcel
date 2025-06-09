@@ -55,12 +55,6 @@ jobs:
           VERSION: ${{ steps.get_version.outputs.VERSION }}
         run: |
           go build -v -ldflags="-X 'main.Version=${VERSION}'" -o "excel-cleaner${{ matrix.ext }}"
-
-      - name: Install zip
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y zip
-
       - name: Create ZIP archive
         run: |
           zip "excel-cleaner-${VERSION}'-${{ matrix.os }}-${{ matrix.arch }}.zip" "excel-cleaner${{ matrix.ext }}" README.md LICENSE
