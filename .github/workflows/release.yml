@@ -1,0 +1,84 @@
+name: Release Build
+
+on:
+  push:
+    tags:
+      - "v*" # Триггер на теги, начинающиеся с 'v'
+
+permissions:
+  contents: write # Разрешение на создание релизов
+
+jobs:
+  build:
+    name: Build Release
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - os: windows
+            arch: amd64
+            ext: .exe
+          - os: darwin
+            arch: amd64
+            ext: ""
+          - os: darwin
+            arch: arm64
+            ext: ""
+          - os: linux
+            arch: amd64
+            ext: ""
+          - os: linux
+            arch: arm64
+            ext: ""
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.21"
+          cache: true
+
+      - name: Get version
+        id: get_version
+        shell: bash
+        run: |
+          echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+
+      - name: Build
+        env:
+          GOOS: ${{ matrix.os }}
+          GOARCH: ${{ matrix.arch }}
+          VERSION: ${{ steps.get_version.outputs.VERSION }}
+        run: |
+          go build -v -ldflags="-X 'main.Version=${VERSION}'" -o "excel-cleaner${{ matrix.ext }}"
+
+      - name: Create ZIP archive
+        run: |
+          zip "excel-cleaner-${VERSION}'-${{ matrix.os }}-${{ matrix.arch }}.zip" "excel-cleaner${{ matrix.ext }}" README.md LICENSE
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: excel-cleaner-${{ matrix.os }}-${{ matrix.arch }}
+          path: excel-cleaner-${VERSION}'-${{ matrix.os }}-${{ matrix.arch }}.zip
+
+  create-release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            */excel-cleaner-*.zip
+          draft: false
+          prerelease: false
+          generate_release_notes: true

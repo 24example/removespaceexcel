@@ -9,6 +9,9 @@ import (
 	"github.com/xuri/excelize/v2"
 )
 
+// Version будет устанавливаться при сборке через ldflags
+var Version = "dev"
+
 // Структура для хранения настроек
 type settings struct {
 	lastOpenPath string
@@ -19,7 +22,7 @@ type settings struct {
 var appSettings = settings{}
 
 func showMainDialog() error {
-	text := `Добро пожаловать в программу для очистки Excel файлов!
+	text := `Excel Cleaner %s
 
 Эта программа поможет вам удалить лишние пробелы из ячеек Excel файлов.
 
@@ -39,8 +42,8 @@ func showMainDialog() error {
 		lastFile = filepath.Base(appSettings.lastOpenPath)
 	}
 
-	return zenity.Question(fmt.Sprintf(text, lastFile),
-		zenity.Title("Excel Cleaner"),
+	return zenity.Question(fmt.Sprintf(text, Version, lastFile),
+		zenity.Title("Excel Cleaner "+Version),
 		zenity.OKLabel("Выбрать файл"),
 		zenity.CancelLabel("Выход"),
 		zenity.Width(400),
