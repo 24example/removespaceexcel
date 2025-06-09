@@ -2,27 +2,19 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>CFBundlePackageType</key>
-    <string>APPL</string>
-    <key>CFBundleInfoDictionaryVersion</key>
-    <string>6.0</string>
-    <key>CFBundleIconFile</key>
-    <string>icon</string>
     <key>CFBundleExecutable</key>
     <string>excel-cleaner</string>
     <key>CFBundleIdentifier</key>
-    <string>com.yourcompany.excel-cleaner</string>
+    <string>com.excelcleaner.app</string>
     <key>CFBundleName</key>
     <string>Excel Cleaner</string>
-    <key>CFBundleDisplayName</key>
-    <string>Excel Cleaner</string>
-    <key>CFBundleVersion</key>
-    <string>1.0.0</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.0.0</string>
+    <string>CURRENT_VERSION</string>
     <key>LSMinimumSystemVersion</key>
-    <string>10.13</string>
-    <key>NSHighResolutionCapable</key>
+    <string>10.10</string>
+    <key>LSUIElement</key>
     <true/>
 </dict>
 </plist> 
