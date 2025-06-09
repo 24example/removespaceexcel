@@ -57,13 +57,13 @@ jobs:
           go build -v -ldflags="-X 'main.Version=${VERSION}'" -o "excel-cleaner${{ matrix.ext }}"
       - name: Create ZIP archive
         run: |
-          zip "excel-cleaner-${VERSION}'-${{ matrix.os }}-${{ matrix.arch }}.zip" "excel-cleaner${{ matrix.ext }}" README.md LICENSE
+          zip "excel-cleaner-${{ steps.get_version.outputs.VERSION }}-${{ matrix.os }}-${{ matrix.arch }}.zip" "excel-cleaner${{ matrix.ext }}" README.md LICENSE
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: excel-cleaner-${{ matrix.os }}-${{ matrix.arch }}
-          path: excel-cleaner-${VERSION}'-${{ matrix.os }}-${{ matrix.arch }}.zip
+          path: excel-cleaner-${{ steps.get_version.outputs.VERSION }}-${{ matrix.os }}-${{ matrix.arch }}.zip
 
   create-release:
     name: Create Release
