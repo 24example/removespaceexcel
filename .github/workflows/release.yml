@@ -39,24 +39,26 @@ jobs:
             arch: arm64
             ext: ""
             gui: true
-          - os: linux
-            arch: "386"
-            ext: ""
-            gui: true
-          - os: windows
-            arch: "386"
-            ext: .exe
-            gui: true
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Clean up Go cache
+        run: |
+          # Clean up potentially corrupted cache
+          rm -rf ~/go/pkg/mod
+          rm -rf ~/.cache/go-build
+        continue-on-error: true
 
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
           go-version: "1.24.2"
           cache: true
+          cache-dependency-path: |
+            go.sum
+            go.mod
 
       - name: Get version
         id: get_version
@@ -78,11 +80,7 @@ jobs:
           sed -i "s/\"FileVersion\": \"\"/\"FileVersion\": \"$VERSION\"/" assets/versioninfo.json
 
           # Генерируем .syso файл для соответствующей архитектуры
-          if [ "${{ matrix.arch }}" = "386" ]; then
-            goversioninfo -32 -platform-specific=true -manifest=assets/excel-cleaner.manifest -icon=assets/icon.ico -o=resource_windows_386.syso assets/versioninfo.json
-          else
-            goversioninfo -platform-specific=true -manifest=assets/excel-cleaner.manifest -icon=assets/icon.ico -o=resource_windows_${{ matrix.arch }}.syso assets/versioninfo.json
-          fi
+          goversioninfo -platform-specific=true -manifest=assets/excel-cleaner.manifest -icon=assets/icon.ico -o=resource_windows_${{ matrix.arch }}.syso assets/versioninfo.json
 
       - name: Build
         env:
