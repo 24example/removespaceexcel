@@ -48,16 +48,40 @@ jobs:
           echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
           echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
 
+      - name: Install dependencies
+        run: |
+          go install github.com/josephspurrier/goversioninfo/cmd/goversioninfo@latest
+          go install github.com/akavel/rsrc@latest
+
+      - name: Generate Windows resources
+        if: matrix.os == 'windows'
+        run: |
+          # Обновляем версию в файле
+          sed -i "s/\"ProductVersion\": \".*\"/\"ProductVersion\": \"$VERSION\"/" assets/versioninfo.json
+          sed -i "s/\"FileVersion\": \"\"/\"FileVersion\": \"$VERSION\"/" assets/versioninfo.json
+
+          # Генерируем .syso файл
+          goversioninfo -platform-specific=true -manifest=assets/excel-cleaner.manifest -icon=assets/icon.ico -o=resource_windows_amd64.syso assets/versioninfo.json
+
       - name: Build
         env:
           GOOS: ${{ matrix.os }}
           GOARCH: ${{ matrix.arch }}
           VERSION: ${{ steps.get_version.outputs.VERSION }}
         run: |
-          go build -v -ldflags="-X 'main.Version=${VERSION}'" -o "excel-cleaner${{ matrix.ext }}"
-      - name: Create ZIP archive
-        run: |
-          zip "excel-cleaner-${{ steps.get_version.outputs.VERSION }}-${{ matrix.os }}-${{ matrix.arch }}.zip" "excel-cleaner${{ matrix.ext }}" README.md LICENSE
+          if [ "${{ matrix.os }}" = "darwin" ]; then
+            go build -v -ldflags="-X 'main.Version=${VERSION}'" -o "excel-cleaner${{ matrix.ext }}"
+            # Создаем .app bundle для macOS
+            mkdir -p Excel\ Cleaner.app/Contents/MacOS
+            mkdir -p Excel\ Cleaner.app/Contents/Resources
+            cp excel-cleaner Excel\ Cleaner.app/Contents/MacOS/
+            cp assets/icon.icns Excel\ Cleaner.app/Contents/Resources/
+            cp assets/Info.plist Excel\ Cleaner.app/Contents/
+            zip -r "excel-cleaner-${{ steps.get_version.outputs.VERSION }}-${{ matrix.os }}-${{ matrix.arch }}.zip" Excel\ Cleaner.app README.md LICENSE
+          else
+            go build -v -ldflags="-X 'main.Version=${VERSION}'" -o "excel-cleaner${{ matrix.ext }}"
+            zip "excel-cleaner-${{ steps.get_version.outputs.VERSION }}-${{ matrix.os }}-${{ matrix.arch }}.zip" "excel-cleaner${{ matrix.ext }}" README.md LICENSE
+          fi
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
