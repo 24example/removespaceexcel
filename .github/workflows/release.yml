@@ -113,7 +113,11 @@ jobs:
             
             # Копируем и обновляем Info.plist
             cp assets/Info.plist "${APP_NAME}/Contents/"
-            sed -i '' "s/CURRENT_VERSION/${VERSION}/g" "${APP_NAME}/Contents/Info.plist"
+            if [[ "$OSTYPE" == "darwin"* ]]; then
+              sed -i '' "s/CURRENT_VERSION/${VERSION}/g" "${APP_NAME}/Contents/Info.plist"
+            else
+              sed -i "s/CURRENT_VERSION/${VERSION}/g" "${APP_NAME}/Contents/Info.plist"
+            fi
             
             # Подписываем приложение если есть сертификат
             if [ -n "$APPLE_DEVELOPER_CERTIFICATE" ]; then
